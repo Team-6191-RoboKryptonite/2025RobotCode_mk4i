@@ -1,23 +1,33 @@
 package frc.robot;
 
-import com.pathplanner.lib.auto.AutoBuilder;
+import java.util.List;
 
+import com.ctre.phoenix.motorcontrol.VictorSPXControlMode;
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
+import com.pathplanner.lib.commands.PathPlannerAuto;
+import com.pathplanner.lib.path.GoalEndState;
+import com.pathplanner.lib.path.PathConstraints;
+import com.pathplanner.lib.path.PathPlannerPath;
+import com.pathplanner.lib.util.PathPlannerLogging;
+
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.PS4Controller.Button;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import edu.wpi.first.wpilibj.DriverStation;
 //import frc.robot.autos.*;
-import frc.robot.commands.LimelightTrackCmd;
-import frc.robot.commands.TeleopSwerve;
-import frc.robot.subsystems.Limelight;
-import frc.robot.subsystems.Swerve;
-//import frc.robot.subsystems.lift;
+import frc.robot.commands.*;
+import frc.robot.subsystems.*;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -28,7 +38,7 @@ import frc.robot.subsystems.Swerve;
 public class RobotContainer {
     /* Controllers */
     private final Joystick driver = new Joystick(0);
-    private final Joystick driver2 = new Joystick(1);
+    //private final Joystick driver2 = new Joystick(1);
 
     private final SendableChooser<Command> autoChooser;
 
@@ -36,69 +46,79 @@ public class RobotContainer {
     private final double translationAxis = driver.getRawAxis(0);
     private final double strafeAxis = driver.getRawAxis(1);
     private final double rotationAxis = driver.getRawAxis(4);
-    //private final double setpoint;
 
-    //private final SendableChooser<Command> autoChooser;
 
     /* Driver Buttons */
-    private boolean zerogyro= driver.getRawButton(1);
-    //private boolean robotcentric = driver.getRawButton(4);
-    //private final JoystickButton robotCentric = new JoystickButton(driver, 4);
-    private final JoystickButton intakeButton = new JoystickButton(driver2, 2);
-    private final JoystickButton shootButton = new JoystickButton(driver2, 1);
-    private final JoystickButton stopButton = new JoystickButton(driver2, 8);
-    private final JoystickButton m_button4 = new JoystickButton(driver,4);
-    private final JoystickButton mbutton5 = new JoystickButton(driver, 5);
-    // private final JoystickButton LiftPlatformButton = new JoystickButton(driver,1);
-    // private final JoystickButton LiftlowButton = new JoystickButton(driver,2);
-    // private final JoystickButton LiftmiddleButton = new JoystickButton(driver, 3);
-    // private final JoystickButton LifthighButton = new JoystickButton(driver, 4)
-    // private final JoystickButton m_button1 = new JoystickButton(joystick,1);
+    // private final JoystickButton bottom = new JoystickButton(driver, 1);
+    private final JoystickButton middle1 = new JoystickButton(driver, 6);
+    // private final JoystickButton middle2 = new JoystickButton(driver, 3);
+    private final JoystickButton top = new JoystickButton(driver, 2);
+    // private final JoystickButton shooter = new JoystickButton(driver, 2);
+    // private final JoystickButton intake = new JoystickButton(driver, 3);
+    //private final JoystickButton climberup = new JoystickButton(driver, 5);
+    //private final JoystickButton climberdown = new JoystickButton(driver, 6);
+    // private final JoystickButton algae_intake1 = new JoystickButton(driver, 5);
+    // private final JoystickButton algae_intake2 = new JoystickButton(driver2, 6);
+    // private final JoystickButton algae_intake3 = new JoystickButton(driver2, 5);
+    // private final JoystickButton m_button5 = new JoystickButton(driver,5);
+    // private final JoystickButton m_button8 = new JoystickButton(driver,8);
+    private final JoystickButton coral_intake = new JoystickButton(driver, 1);
+    private final JoystickButton coral_shooter = new JoystickButton(driver, 3);
+    // private final JoystickButton algae_shooter1 = new JoystickButton(driver2, 4);
+    // private final JoystickButton algae_shooter2 = new JoystickButton(driver2, 1);
+    private final JoystickButton limelightButton = new JoystickButton(driver,4);
     private final Limelight limelight = new Limelight();
     /* Subsystems */
     private final Swerve s_Swerve = new Swerve();
-    //private final lift mlift = new lift();
-    // private final intake_shoot intake_shooter = new intake_shoot();
-
-    private final LimelightTrackCmd limelightCmd = new LimelightTrackCmd(s_Swerve, limelight);
-    //private final LiftCmd liftCmd = new LiftCmd(mlift, setpoint);
+    private final Lift mlift = new Lift();
+    private final Intake_shooter intake_shooter = new Intake_shooter();
+    private final Climber climber = new Climber();
+    double speed;
+    /* Commands */
+    private final LimelightCmd limelightCmd = new LimelightCmd(s_Swerve, limelight);
+    // private final AutoCmd autoCmd = new AutoCmd(mlift, intake_shooter, 1.1);
+    // private final Coral_intake_cmd coral_intake_cmd = new Coral_intake_cmd(intake_shooter, 0.3);
+    // private final Teleop teleop = new Teleop(mlift, intake_shooter);
     /** The container for the robot. Contains subsystems, OI devices, and commands. */
     public RobotContainer() {
+        //mlift.setDefaultCommand(new Teleop(mlift, intake_shooter));
+        //intake_shooter.setDefaultCommand(new Teleop(mlift, intake_shooter));
+
+        intake_shooter.setDefaultCommand(new Algae_spin_cmd(intake_shooter, 6));
         s_Swerve.setDefaultCommand(
             new TeleopSwerve(
                 s_Swerve, 
+                () -> driver.getRawAxis(0), 
                 () -> -driver.getRawAxis(1), 
-                () -> -driver.getRawAxis(0), 
-                () -> driver.getRawAxis(4), 
+                () -> -driver.getRawAxis(4), 
                 () -> false
             )
         );
-        m_button4.toggleOnTrue(limelightCmd);
-        mbutton5.toggleOnTrue(new TeleopSwerve(
-            s_Swerve, 
-            () -> -driver2.getRawAxis(1)*0.5, 
-            () -> -driver2.getRawAxis(0)*0.5, 
-            () -> driver2.getRawAxis(4)*0.5, 
-            () -> false
-        ));
-        // NamedCommands.registerCommand("intake_cmd", intake_shooter.intake_cmd());
-        // NamedCommands.registerCommand("shooter_cmd", intake_shooter.shooter_cmd());
+        //mlift.setDefaultCommand(new LiftTeleop(mlift));
+        // m_button5.onTrue(new Coral_intake_cmd(intake_shooter, 0.2));
+        // m_button8.toggleOnTrue(new TeleopSwerve(
+        //     s_Swerve, 
+        //     () -> driver2.getRawAxis(0)*0.3, 
+        //     () -> -driver2.getRawAxis(1)*0.3, 
+        //     () -> -driver2.getRawAxis(4)*0.3,
+        //     () -> true
+        // ));
+        // m_button6.onTrue(new Coral_shoot_cmd(intake_shooter, 0.2));
+        limelightButton.toggleOnTrue(limelightCmd);
+
         // Configure the button bindings
         configureButtonBindings();
-
-        //autoChooser = AutoBuilder.buildAutoChooser();
-        //SmartDashboard.putData("Auto Mode", autoChooser);
-
-        // SmartDashboard.putData("Field", s_Swerve.field);
-        // PathPlannerLogging.setLogCurrentPoseCallback((pose) -> {s_Swerve.field.setRobotPose(pose);});
+        // NamedCommands.registerCommand("Auto1", autoCmd);
+        // NamedCommands.registerCommand("intake", coral_intake_cmd);
+        NamedCommands.registerCommand("shoot", new Coral_shoot_cmd(intake_shooter, 0.3));
         autoChooser = AutoBuilder.buildAutoChooser();
-
-    // Another option that allows you to specify the default auto by its name
-    // autoChooser = AutoBuilder.buildAutoChooser("My Default Auto");
-
-    SmartDashboard.putData("Auto Chooser", autoChooser);
+        // NamedCommands.registerCommand("stop", new Coral_shoot_cmd(intake_shooter, 0));
+        // NamedCommands.registerCommand("shooter", new LiftCmd(mlift, 0).andThen(new Coral_shoot_cmd(intake_shooter, 0.3)).andThen(new LiftCmd(mlift, 0)));
+        // NamedCommands.registerCommand("down", new LiftCmd(mlift, 0));
+        // NamedCommands.registerCommand("intake", new Coral_intake_cmd(intake_shooter, 0.3));
+        SmartDashboard.putBoolean("photosensor", intake_shooter.getPhotosensor());
+        SmartDashboard.putData("Auto Chooser", autoChooser);
     }
-
     /**
      * Use this method to define your button->command mappings. Buttons can be created by
      * instantiating a {@link GenericHID} or one of its subclasses ({@link
@@ -106,35 +126,27 @@ public class RobotContainer {
      * edu.wpi.first.wpilibj2.command.button.JoystickButton}.
      */
     private void configureButtonBindings() {
-        // SmartDashboard.putData("Pathfind to pickup pos", AutoBuilder.pathfindToPose(
-        //     new Pose2d(14.0, 6.5, Rotation2d.fromDegrees(0)), new PathConstraints(4, 4, Units.degreesToRadians(360), Units.degreesToRadians(540)),
-        //     0, 2.0));
-        // SmartDashboard.putData("pathfind to scoring pos", AutoBuilder.pathfindToPose(
-        //     new Pose2d(2.15, 3.0, Rotation2d.fromDegrees(180)), 
-        //     new PathConstraints(4, 4, Units.degreesToRadians(360), Units.degreesToRadians(540)), 0, 0));
-        // SmartDashboard.putData("on the fly path", Commands.runOnce(() -> {
-        //     Pose2d currentPos = s_Swerve.getPose();
-        //     Pose2d startPos = new Pose2d(currentPos.getTranslation(), new Rotation2d());
-        //     Pose2d endPos = new Pose2d(currentPos.getTranslation().plus(new Translation2d(2.0, 0.0)), new Rotation2d());
-            
-        //     List<Translation2d> bezierPoints = PathPlannerPath.bezierFromPoses(startPos, endPos);
-        //     PathPlannerPath path = new PathPlannerPath(
-        //         bezierPoints,
-        //         new PathConstraints(4.0, 4.0, Units.degreesToRadians(360), Units.degreesToRadians(540)),
-        //         new GoalEndState(0.0, currentPos.getRotation())
-        //         );
-
-        //         path.preventFlipping = true;
-
-        //         AutoBuilder.followPath(path).schedule();
-        // }));
-
-        /* Driver Buttons */
-        //zerogyro.onTrue(new InstantCommand(s_Swerve::zeroHeading));
-        
-        //LiftPlatformButton.onTrue();
-        //shootButton.onTrue(new InstantCommand(() -> intake_shooter.shooter()));
-        //stopButton.onTrue(new InstantCommand(() -> intake_shooter.stopevery()));
+        top.onTrue(new LiftCmd(mlift, 1.1).andThen(new Coral_shoot_cmd(intake_shooter, -0.2)).andThen(new LiftCmd(mlift, 0.08)));
+        middle1.onTrue(new LiftCmd(mlift, 3).andThen(new Coral_shoot_cmd(intake_shooter, -0.2)).andThen(new LiftCmd(mlift, 0.1)));
+        //middle2.onTrue(new LiftCmd(mlift, 1.1).andThen(new Coral_shoot_cmd(intake_shooter, -0.2)).andThen(new LiftCmd(mlift, 0.3)));
+        // bottom.onTrue(new LiftCmd(mlift, 0.1).andThen(new Coral_shoot_cmd(intake_shooter, -0.2)));
+        // shooter.onTrue(new Coral_shoot_cmd(intake_shooter, -0.2));
+        coral_intake.whileTrue(new Coral_intake_cmd(intake_shooter,-0.1));
+        coral_intake.whileFalse(new Coral_intake_cmd(intake_shooter,0));
+        coral_shooter.onTrue(new Coral_shoot_cmd(intake_shooter, -0.1));
+        // climberup.whileTrue(new ClimberSetSPeed(climber, 0.3));
+        // climberdown.whileTrue(new ClimberSetSPeed(climber, -0.3));
+        // climberup.whileFalse(new ClimberSetSPeed(climber, 0));
+        // climberdown.whileFalse(new ClimberSetSPeed(climber, 0));
+        // algae_intake1.onTrue(new LiftCmd(mlift, 2.59).andThen(new Algae_spin_cmd(intake_shooter, 60)).andThen(new Coral_shoot_cmd(intake_shooter, -0.3)).andThen(new LiftCmd(mlift, 0)));
+        // algae_intake2.onTrue(new LiftCmd(mlift, 1.94).andThen(new Algae_spin_cmd(intake_shooter, 60)).andThen(new Coral_shoot_cmd(intake_shooter, -0.3)).andThen(new LiftCmd(mlift, 0)));
+        // algae_intake3.onTrue(new Algae_spin_cmd(intake_shooter, 72).andThen(new Coral_shoot_cmd(intake_shooter, 0.3)).andThen(new Algae_spin_cmd(intake_shooter, 8)));
+        // intake.whileTrue(new Coral_intake_cmd(intake_shooter, -0.1));
+        // intake.whileFalse(new Coral_intake_cmd(intake_shooter, 0));
+        // algae_shooter1.onTrue(new Coral_shoot_cmd(intake_shooter, 0.5));
+        // algae_shooter2.onTrue(new Coral_shoot_cmd(intake_shooter, -0.5));
+        // intake.whileTrue(new Coral_intake_cmd(intake_shooter));
+        // shooter.whileTrue(limelightCmd);
     }
 
     /**
@@ -144,21 +156,6 @@ public class RobotContainer {
      */
     public Command getAutonomousCommand() {
         return autoChooser.getSelected();
-    //PathPlannerPath path = PathPlannerPath.fromPathFile("shooot");
-    //return autoChooser.getSelected();
-    //return s_Swerve.followPathCommand(path);
-// List<PathPlannerPath> pathgroup = PathPlannerAuto.getPathGroupFromAutoFile("auto");
-    // Pose2d startingpos = PathPlannerAuto.getStaringPoseFromAutoFile("auto");
-    // for (PathPlannerPath path : pathgroup) {
-    //     return s_Swerve.followPathCommand(path);
-    // }
     }
-
-    // public Command setShootercmd() {
-    //     return new intake_shooter_cmd();
-    // }
-
-    // public Command setIntakecmd() {
-    //     return new intake_cmd();
-    // }
 }
+

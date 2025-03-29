@@ -10,10 +10,9 @@ import com.ctre.phoenix.motorcontrol.VictorSPXControlMode;
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 //import com.kauailabs.navx.frc.AHRS;
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.commands.FollowPathCommand;
 import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.util.PathPlannerLogging;
-import com.studica.frc.AHRS;
-import com.studica.frc.AHRS.NavXComType;
 
 import edu.wpi.first.util.PixelFormat;
 import edu.wpi.first.util.sendable.SendableRegistry;
@@ -31,11 +30,9 @@ import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import frc.robot.subsystems.Coral_intake_shoot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.I2C.Port;
-import frc.robot.subsystems.Swerve;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -46,12 +43,10 @@ import frc.robot.subsystems.Swerve;
 public class Robot extends TimedRobot {
   public static final CTREConfigs ctreConfigs = new CTREConfigs();
   private Command m_autonomousCommand;
-  //private AHRS gyro = new AHRS(NavXComType.kUSB2);
 
   private RobotContainer m_robotContainer;
   //private intake_shoot shoot = new intake_shoot();
   Thread m_visionThread;
-  // private Swerve mswerve;
 
     // VictorSPX leftshooter = new VictorSPX(29);
     // VictorSPX rightshooter = new VictorSPX(28);
@@ -80,6 +75,7 @@ public class Robot extends TimedRobot {
      //CvSink cvSink = CameraServer.getVideo();
      //setup a CVSource to send images to Dashboard
      //CvSource outputStream = CameraServer.putVideo("rectangle", 640, 480);
+       FollowPathCommand.warmupCommand().schedule();
     }
 
   @Override
@@ -102,8 +98,6 @@ public class Robot extends TimedRobot {
 
   @Override
   public void autonomousInit() {
-    //gyro.reset();
-    // mswerve.resetGyro();
     m_autonomousCommand = m_robotContainer.getAutonomousCommand();
     if (m_autonomousCommand != null) {
       m_autonomousCommand.schedule();
